@@ -2,10 +2,14 @@
 <packages>
     <package id="7zip.7zip" name="7-Zip" icon="7z.png" winget="true" description="7-Zip 是一款拥有极高压缩比的开源压缩软件"></package>
     <package id="Kingsoft.WPSOffice" name="WPS Office" icon="wps.png" winget="true" description="WPS Office 是一款功能强大的办公软件"></package>
+    <package id="Yerong.OfficeToolPlus" name="OfficeToolPlus" icon="officetoolplus.png" winget="true" description="OfficeToolPlus 是一款用于管理和优化 Microsoft Office 的工具"></package>
     <package id="Tencent.WeChat.Universal" name="微信" icon="wx.png" winget="true" description="微信，是一种生活方式"></package>
     <package id="Tencent.TencentMeeting" name="腾讯会议" icon="txmeeting.png" winget="true" description="腾讯会议是一款专业的音视频会议软件"></package>
     <package id="Tencent.WeCom" name="企业微信" icon="qywx.png" winget="true" description="企业微信是腾讯公司推出的企业级办公通讯工具"></package>
     <package id="Tencent.QQ.NT" name="QQ" icon="qq.png" winget="true" description="QQ，轻松做自己"></package>
     <package id="NetEase.CloudMusic" name="网易云音乐" icon="cloudmusic.png" winget="true" description="网易云音乐是一款流行的在线音乐服务平台"></package>
+    <package id="Tencent.QQMusic" name="QQ 音乐" icon="qqmusic.png" winget="true" description="QQ 音乐是腾讯公司推出的一款在线音乐服务平台"></package>
     <package id="Microsoft.VisualStudioCode" name="Visual Studio Code" icon="vscode.png" winget="true" description="Visual Studio Code 是一款免费的开源代码编辑器"></package>
+    <package id="Microsoft.Edge" name="Microsoft Edge" icon="edge.png" winget="true" description="Microsoft Edge 是微软推出的一款基于 Chromium 的浏览器"></package>
+    <package id="Microsoft.PowerToys" name="PowerToys" icon="powertoys.png" winget="true" description="PowerToys 是微软推出的一款 Windows 系统增强工具"></package>
 </packages>
