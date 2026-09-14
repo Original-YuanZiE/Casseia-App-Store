@@ -29,12 +29,24 @@ namespace App_Store
             InitializeComponent();
             this.ExtendsContentIntoTitleBar = true;
             this.AppWindow.TitleBar.PreferredHeightOption = Microsoft.UI.Windowing.TitleBarHeightOption.Tall;
-            MainGrid.Loaded += (s, e) => { MainFrame.Navigate(typeof(SearchPage)); };
+            MainGrid.Loaded += (s, e) => { MainNavView.SelectedItem = NavigateSearch; MainNavView_ItemInvoked(MainNavView, new NavigationViewItemInvokedEventArgs()); };
         }
 
         private void MainNavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
+            if (sender.SelectedItem == NavigateSearch)
+            {
+                NavigateTo(typeof(SearchPage));
+            }
+            else if (sender.SelectedItem == NavigateDownload)
+            {
+                NavigateTo(typeof(DownloadPage));
+            }
+        }
 
+        public void NavigateTo(Type pageType)
+        {
+            MainFrame.Navigate(pageType);
         }
     }
 }

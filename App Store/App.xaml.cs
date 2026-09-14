@@ -47,6 +47,7 @@ namespace App_Store
         {
             _window = new MainWindow();
             _window.Activate();
+            core.SetDispatcher(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
         }
 
         public static bool IsRunningAsAdmin()
@@ -67,6 +68,8 @@ namespace App_Store
             }
 
         }
+
+        public static Core.Core core = new Core.Core();
 
         public static async Task<ContentDialogResult> ShowDialog(XamlRoot xamlRoot, string title, Object content, string primary, string secondary, string cancel, ContentDialogButton def)
         {

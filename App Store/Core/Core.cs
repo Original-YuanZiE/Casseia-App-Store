@@ -1,9 +1,12 @@
-﻿using Microsoft.UI.Xaml.Documents;
+﻿using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -39,11 +42,37 @@ namespace App_Store.Core
             }
         }
     }
+
+    public class DownloadTask : INotifyPropertyChanged
+    {
+        public string Name { get; set; }
+        public string SavePath { get; set; }
+
+        private double _progress;
+        public double Progress
+        {
+            get => _progress;
+            set { _progress = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Progress))); }
+        }
+
+        private string _speed = "等待中";
+        public string Speed
+        {
+            get => _speed;
+            set { _speed = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Speed))); }
+        }
+
+        public CancellationTokenSource Cts { get; set; } = new();
+        public event PropertyChangedEventHandler PropertyChanged;
+    }
     public class Core
     {
         private const string CatalogUrl = "https://raw.githubusercontent.com/Original-YuanZiE/Casseia-App-Store/master/source/main.xml";
         private const string IconBaseUrl = "https://raw.githubusercontent.com/Original-YuanZiE/Casseia-App-Store/master/source/icons/";
-        
+
+        public ObservableCollection<DownloadTask> Downloads { get; } = new();
+        private DispatcherQueue _dispatcher;
+
 
         public async Task<List<AppInfo>> GetAppListAsync()
         {
@@ -147,7 +176,9 @@ namespace App_Store.Core
 
         public async Task<AppInfo> FinishAppInfoSingle(AppInfo originalInfo)
         {
-            string WinGetOutput = await RunWinGetAsync($"show --id {originalInfo.Id} --exact --accept-source-agreements");
+            var args = $"show --id {originalInfo.Id} --exact --accept-source-agreements";
+
+            string WinGetOutput = await RunWinGetAsync(args);
 
             string[] lines = WinGetOutput.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -184,6 +215,109 @@ namespace App_Store.Core
             }
 
             return appInfos;
+        }
+
+        public void SetDispatcher(DispatcherQueue dispatcher)
+        {
+            _dispatcher = dispatcher;
+        }
+
+        public async Task DownloadAsync(AppInfo app)
+        {
+            if (string.IsNullOrEmpty(app.DownloadUrl))
+            {
+                await FinishAppInfoSingle(app);
+            }
+
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(App.Root, "DownloadCache"));
+            }
+            catch
+            { }
+
+            var task = new DownloadTask
+            {
+                Name = app.Name,
+                SavePath = Path.Combine(App.Root, "DownloadCache", Path.GetFileName(new Uri(app.DownloadUrl).AbsolutePath))
+            };
+            Downloads.Add(task);
+
+            try
+            {
+                using var http = new HttpClient();
+                using var response = await http.GetAsync(
+                    app.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, task.Cts.Token);
+                response.EnsureSuccessStatusCode();
+
+                var totalBytes = response.Content.Headers.ContentLength ?? -1;
+                using var stream = await response.Content.ReadAsStreamAsync(task.Cts.Token);
+                using var file = File.Create(task.SavePath);
+
+                var buffer = new byte[81920];
+                long downloaded = 0;
+                int read;
+                var lastTime = DateTime.Now;
+                long lastBytes = 0;
+
+                while ((read = await stream.ReadAsync(buffer, task.Cts.Token)) > 0)
+                {
+                    await file.WriteAsync(buffer.AsMemory(0, read), task.Cts.Token);
+                    downloaded += read;
+
+                    var now = DateTime.Now;
+                    if ((now - lastTime).TotalMilliseconds > 200)
+                    {
+                        var speed = (downloaded - lastBytes) / (now - lastTime).TotalSeconds;
+                        lastBytes = downloaded;
+                        lastTime = now;
+
+                        _dispatcher?.TryEnqueue(() =>
+                        {
+                            task.Progress = totalBytes > 0
+                                ? (double)downloaded / totalBytes * 100 : 0;
+                            task.Speed = speed > 1048576
+                                ? $"{speed / 1048576:F1} MB/s"
+                                : $"{speed / 1024:F0} KB/s";
+                        });
+                    }
+                }
+
+                _dispatcher?.TryEnqueue(() =>
+                {
+                    task.Progress = 100;
+                    task.Speed = "下载完成";
+
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = task.SavePath,
+                            UseShellExecute = true
+                        });
+                    }
+                    catch { }
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                _dispatcher?.TryEnqueue(() => Downloads.Remove(task));
+                try { File.Delete(task.SavePath); } catch { }
+            }
+            catch (Exception ex)
+            {
+                _dispatcher?.TryEnqueue(() =>
+                {
+                    task.Speed = "失败: " + ex.Message;
+                });
+                try { File.Delete(task.SavePath); } catch { }
+            }
+        }
+
+        public void CancelDownload(DownloadTask task)
+        {
+            task.Cts.Cancel();
+            Downloads.Remove(task);
         }
     }
 }

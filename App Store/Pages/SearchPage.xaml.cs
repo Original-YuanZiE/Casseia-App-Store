@@ -31,7 +31,6 @@ namespace App_Store.Pages
     /// </summary>
     public sealed partial class SearchPage : Page
     {
-        Core.Core core = new Core.Core();
         public class AppResData
         {
 
@@ -49,9 +48,9 @@ namespace App_Store.Pages
                 ResRow.Height = new GridLength(1, GridUnitType.Star);
                 BoxRow.Height = new GridLength(150);
 
-                var list = await core.GetAppListAsync();
+                var list = await App.core.GetAppListAsync();
 
-                var results = await core.SearchAppAsync(list, SearchTextBox.Text);
+                var results = await App.core.SearchAppAsync(list, SearchTextBox.Text);
 
                 //var final = await core.FinishAppInfoAsync(results);
 
@@ -105,7 +104,7 @@ namespace App_Store.Pages
         {
             var btn = sender as Button;
             var appInfo = btn.DataContext as Core.AppInfo;
-
+            AppInfo fullInfo = new AppInfo();
 
             ScrollViewer sv = new ScrollViewer();
             sv.VerticalScrollMode = ScrollMode.Auto;
@@ -138,7 +137,7 @@ namespace App_Store.Pages
 
             sp.Loaded += async (s, e) =>
             {
-                var fullInfo = await core.FinishAppInfoSingle(appInfo);
+                fullInfo = await App.core.FinishAppInfoSingle(appInfo);
                 image.Source = fullInfo.IconImage;
                 description.Text = fullInfo.Version + "\n" + fullInfo.Publisher + "\n\n" + fullInfo.Description;
             };
@@ -169,6 +168,8 @@ namespace App_Store.Pages
                     null,
                     null,
                     ContentDialogButton.Primary);
+
+                await App.core.DownloadAsync(fullInfo);
             }
         }
     }
