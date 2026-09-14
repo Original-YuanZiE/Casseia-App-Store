@@ -2,7 +2,6 @@
 <packages>
     <package id="7zip.7zip" name="7-Zip" icon="7z.png" winget="true" description="7-Zip 是一款拥有极高压缩比的开源压缩软件"></package>
     <package id="Kingsoft.WPSOffice" name="WPS Office" icon="wps.png" winget="true" description="WPS Office 是一款功能强大的办公软件"></package>
-    <package id="Yerong.OfficeToolPlus" name="OfficeToolPlus" icon="officetoolplus.png" winget="true" description="OfficeToolPlus 是一款用于管理和优化 Microsoft Office 的工具"></package>
     <package id="Tencent.WeChat.Universal" name="微信" icon="wx.png" winget="true" description="微信，是一种生活方式"></package>
     <package id="Tencent.TencentMeeting" name="腾讯会议" icon="txmeeting.png" winget="true" description="腾讯会议是一款专业的音视频会议软件"></package>
     <package id="Tencent.WeCom" name="企业微信" icon="qywx.png" winget="true" description="企业微信是腾讯公司推出的企业级办公通讯工具"></package>
