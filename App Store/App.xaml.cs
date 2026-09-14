@@ -58,6 +58,16 @@ namespace App_Store
 
         }
 
+        public static string Root
+        {
+            // App 的根目录
+            get
+            {
+                return AppContext.BaseDirectory.TrimEnd('\\');
+            }
+
+        }
+
         public static async Task<ContentDialogResult> ShowDialog(XamlRoot xamlRoot, string title, Object content, string primary, string secondary, string cancel, ContentDialogButton def)
         {
             // 弹出简单弹窗

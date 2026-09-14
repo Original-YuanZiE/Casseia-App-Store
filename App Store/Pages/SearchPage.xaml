@@ -21,20 +21,22 @@
                 <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE721;"/>
             </Button>
         </Grid>
-        <ListView x:Name="ResList" Grid.Row="1">
+        <ListView x:Name="ResList" Grid.Row="1" Margin="50,0,50,0" SelectionMode="None" >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="core:AppInfo">
-                    <StackPanel Orientation="Horizontal" Spacing="20" Height="100">
-                        <Image Stretch="Uniform" Height="80" Width="80" Source="{x:Bind IconImage}"/>
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <TextBlock Text="{x:Bind Name}" FontSize="22" VerticalAlignment="Bottom"/>
-                            <TextBlock Text="{x:Bind Description}" FontSize="14" Grid.Row="1"/>
-                        </Grid>
-                    </StackPanel>
+                    <Button Click="ResButton_Click" Tag="{x:Bind}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderBrush="Transparent" BorderThickness="0">
+                        <StackPanel Orientation="Horizontal" Spacing="30" Height="100">
+                            <Image Stretch="Uniform" Height="50" Width="50" Source="{x:Bind IconImage}"/>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{x:Bind Name}" FontSize="22" VerticalAlignment="Bottom"/>
+                                <TextBlock Text="{x:Bind Description}" FontSize="14" Grid.Row="1"/>
+                            </Grid>
+                        </StackPanel>
+                    </Button>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
