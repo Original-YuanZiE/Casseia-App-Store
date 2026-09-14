@@ -26,7 +26,7 @@ namespace App_Store.Pages
     /// </summary>
     public sealed partial class SearchPage : Page
     {
-        WinGetCli cli = new WinGetCli();
+        Core.Core core = new Core.Core();
         public class AppResData
         {
 
@@ -44,11 +44,15 @@ namespace App_Store.Pages
                 ResRow.Height = new GridLength(1, GridUnitType.Star);
                 BoxRow.Height = new GridLength(150);
 
-                var results = await cli.SearchAsync(SearchTextBox.Text);
+                var list = await core.GetAppListAsync();
+
+                var results = await core.SearchAppAsync(list, SearchTextBox.Text);
+
+                //var final = await core.FinishAppInfoAsync(results);
 
                 string res = "";
 
-                foreach (WinGetCli.WinGetPackage package in results)
+                /*foreach (Core.AppInfo package in results)
                 {
                     res += package.Name + Environment.NewLine;
                 }
@@ -60,13 +64,16 @@ namespace App_Store.Pages
                     "好",
                     null,
                     null,
-                    ContentDialogButton.Primary);
+                    ContentDialogButton.Primary);*/
+
+                ResList.ItemsSource = results;
+
             }
             catch (Exception ex)
             {
                 await App.ShowDialog(
                     this.XamlRoot,
-                    "WinGet 异常",
+                    "出现异常",
                     $"{ex.GetType().FullName}\n\n{ex.Message}\n\n{ex.StackTrace}",
                     "好",
                     null,
@@ -75,6 +82,18 @@ namespace App_Store.Pages
             }
         }
 
-        
+        private void SearchTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                e.Handled = true;
+                SearchBtn_Click(sender, e);
+            }
+        }
+
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            SearchTextBox.Text.Replace("\r", "").Replace("\n", "");
+        }
     }
 }

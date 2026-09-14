@@ -11,7 +11,7 @@ namespace App_Store.Core
 {
     public class WinGetCli
     {
-        // 已弃用
+        
         private static readonly SemaphoreSlim _lock = new(1, 1);
 
         public async Task<string> RunAsync(string arguments, int timeoutMs = 60000)
