@@ -11,7 +11,7 @@ namespace App_Store.Core
 {
     public class WinGetCli
     {
-        // WinGet 本地索引不支持并发，必须加锁
+        // 已弃用
         private static readonly SemaphoreSlim _lock = new(1, 1);
 
         public async Task<string> RunAsync(string arguments, int timeoutMs = 60000)
