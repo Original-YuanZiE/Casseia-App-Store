@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="App_Store.Pages.SearchPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:App_Store.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="Transparent">
+
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" x:Name="BoxRow"/>
+            <RowDefinition Height="0" x:Name="ResRow"/>
+        </Grid.RowDefinitions>
+        <Grid x:Name="SearchGrid" HorizontalAlignment="Stretch" VerticalAlignment="Center" MaxWidth="500" Margin="50,0,50,0">
+            <TextBox x:Name="SearchTextBox" PlaceholderText="在此键入以搜索" FontSize="18" HorizontalAlignment="Stretch" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
+            <Button Background="Transparent" x:Name="SearchBtn" Click="SearchBtn_Click" HorizontalAlignment="Right" Style="{StaticResource SubtleButtonStyle}">
+                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE721;"/>
+            </Button>
+        </Grid>
+        <ListView x:Name="ResList" Grid.Row="1">
+            
+        </ListView>
+    </Grid>
+</Page>
