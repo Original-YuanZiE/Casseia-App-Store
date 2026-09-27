@@ -38,6 +38,10 @@ namespace App_Store
             {
                 NavigateTo(typeof(SearchPage));
             }
+            else if (sender.SelectedItem == NavigateLocal)
+            {
+                NavigateTo(typeof(LocalPage));
+            }
             else if (sender.SelectedItem == NavigateDownload)
             {
                 NavigateTo(typeof(DownloadPage));

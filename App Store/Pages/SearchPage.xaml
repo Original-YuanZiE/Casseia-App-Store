@@ -21,6 +21,10 @@
                 <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE721;"/>
             </Button>
         </Grid>
+        <StackPanel x:Name="UpdateStatusPanel" Orientation="Horizontal" Spacing="8" Visibility="{x:Bind Core.IsSourceUpdating, Mode=OneWay}" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,10">
+            <ProgressRing IsActive="True" Width="16" Height="16"/>
+            <TextBlock Text="正在检查源更新..." VerticalAlignment="Center"/>
+        </StackPanel>
         <ListView x:Name="ResList" Grid.Row="1" Margin="50,0,50,0" SelectionMode="None" >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="core:AppInfo">
@@ -41,4 +45,5 @@
             </ListView.ItemTemplate>
         </ListView>
     </Grid>
+    
 </Page>

@@ -48,6 +48,7 @@ namespace App_Store
             _window = new MainWindow();
             _window.Activate();
             core.SetDispatcher(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
+            _ = core.UpdateSourceAsync();
         }
 
         public static bool IsRunningAsAdmin()
@@ -68,6 +69,7 @@ namespace App_Store
             }
 
         }
+
 
         public static Core.Core core = new Core.Core();
 

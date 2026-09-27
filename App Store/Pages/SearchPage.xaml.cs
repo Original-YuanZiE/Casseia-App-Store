@@ -31,14 +31,10 @@ namespace App_Store.Pages
     /// </summary>
     public sealed partial class SearchPage : Page
     {
-        public class AppResData
-        {
-
-        }
+        public Core.Core Core => App.core;
         public SearchPage()
         {
             InitializeComponent();
-
         }
 
         private async void SearchBtn_Click(object sender, RoutedEventArgs e)

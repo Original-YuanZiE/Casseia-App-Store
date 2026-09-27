@@ -1,6 +1,8 @@
 ﻿using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -65,43 +67,73 @@ namespace App_Store.Core
         public CancellationTokenSource Cts { get; set; } = new();
         public event PropertyChangedEventHandler PropertyChanged;
     }
-    public class Core
+    public class Core : INotifyPropertyChanged
     {
+        public Visibility _isSourceUpdating = Visibility.Visible;
+        public Visibility IsSourceUpdating
+        {
+            get => _isSourceUpdating;
+            set { _isSourceUpdating = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSourceUpdating))); }
+        }
         private const string CatalogUrl = "https://raw.githubusercontent.com/Original-YuanZiE/Casseia-App-Store/master/source/main.xml";
         private const string IconBaseUrl = "https://raw.githubusercontent.com/Original-YuanZiE/Casseia-App-Store/master/source/icons/";
+        private static readonly string DefaultXmlPath = Path.Combine(App.Root, "Assets", "source", "main.xml");
 
         public ObservableCollection<DownloadTask> Downloads { get; } = new();
         private DispatcherQueue _dispatcher;
 
+        private List<AppInfo> ParseXml(XDocument doc)
+        {
+            var appList = new List<AppInfo>();
+            foreach (var element in doc.Root.Elements("package"))
+            {
+                string id = element.Attribute("id")?.Value;
+                string name = element.Attribute("name")?.Value;
+                string icon = IconBaseUrl + element.Attribute("icon")?.Value;
+                string description = element.Attribute("description")?.Value;
+                bool winget = element.Attribute("winget")?.Value == "true";
+                appList.Add(new AppInfo { Id = id, Name = name, IconUrl = icon, isWinGetApp = winget, Description = description });
+            }
+            return appList;
+        }
 
-        public async Task<List<AppInfo>> GetAppListAsync()
+        private List<AppInfo> LoadLocalSource()
         {
             try
             {
-                using (HttpClient cli = new HttpClient())
+                if (File.Exists(DefaultXmlPath))
                 {
-                    cli.Timeout = TimeSpan.FromSeconds(10);
-                    var xml = await cli.GetStringAsync(CatalogUrl);
+                    var xml = File.ReadAllText(DefaultXmlPath);
                     var doc = XDocument.Parse(xml);
-                    var appList = new List<AppInfo>();
-
-                    foreach (var element in doc.Root.Elements("package"))
-                    {
-                        string id = element.Attribute("id")?.Value;
-                        string name = element.Attribute("name")?.Value;
-                        string icon = IconBaseUrl + element.Attribute("icon")?.Value;
-                        string description = element.Attribute("description")?.Value;
-                        bool winget = element.Attribute("winget")?.Value == "true";
-                        appList.Add(new AppInfo { Id = id, Name = name, IconUrl = icon, isWinGetApp = winget, Description = description});
-                    }
-
-                    return appList;
+                    return ParseXml(doc);
                 }
+            }
+            catch { }
+            return new List<AppInfo>();
+        }
+
+        public async Task UpdateSourceAsync()
+        {
+            try
+            {
+                IsSourceUpdating = Visibility.Visible;
+                using var cli = new HttpClient();
+                cli.Timeout = TimeSpan.FromSeconds(10);
+                var xml = await cli.GetStringAsync(CatalogUrl);
+                File.WriteAllText(DefaultXmlPath, xml);
             }
             catch
             {
-                return null;
             }
+            finally
+            {
+                IsSourceUpdating = Visibility.Collapsed;
+            }
+        }
+
+        public async Task<List<AppInfo>> GetAppListAsync()
+        {
+            return LoadLocalSource();
         }
 
         public async Task<List<AppInfo>> SearchAppAsync(List<AppInfo> appList, string keyWord)
@@ -145,6 +177,8 @@ namespace App_Store.Core
         }
 
         private SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public async Task<string> RunWinGetAsync(string arguments, int timeoutMs = 60000)
         {
@@ -318,6 +352,150 @@ namespace App_Store.Core
         {
             task.Cts.Cancel();
             Downloads.Remove(task);
+        }
+
+        public List<InstalledApp> GetInstalledAppsFromRegistry()
+        {
+            var apps = new List<InstalledApp>();
+            var registryKeys = new[]
+            {
+                Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
+                Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),
+                Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")
+            };
+
+            foreach (var key in registryKeys)
+            {
+                if (key == null) continue;
+
+                foreach (var subKeyName in key.GetSubKeyNames())
+                {
+                    try
+                    {
+                        var subKey = key.OpenSubKey(subKeyName);
+                        if (subKey == null) continue;
+
+                        var displayName = subKey.GetValue("DisplayName") as string;
+                        var displayVersion = subKey.GetValue("DisplayVersion") as string;
+                        var publisher = subKey.GetValue("Publisher") as string;
+                        var uninstallString = subKey.GetValue("UninstallString") as string;
+                        var displayIcon = subKey.GetValue("DisplayIcon") as string;
+
+                        if (string.IsNullOrEmpty(displayName) || string.IsNullOrEmpty(uninstallString))
+                            continue;
+
+                        string iconPath = null;
+                        if (!string.IsNullOrEmpty(displayIcon))
+                        {
+                            iconPath = displayIcon.Split(',')[0].Trim();
+                        }
+
+                        apps.Add(new InstalledApp
+                        {
+                            Name = displayName,
+                            Version = displayVersion ?? "",
+                            Publisher = publisher,
+                            UninstallString = uninstallString,
+                            LocalIconPath = iconPath
+                        });
+                    }
+                    catch { }
+                }
+            }
+
+            return apps;
+        }
+
+        public void MatchWithSource(List<InstalledApp> apps, List<AppInfo> sourceApps)
+        {
+            foreach (var app in apps)
+            {
+                foreach (var source in sourceApps)
+                {
+                    if (app.Name.Contains(source.Name) || source.Name.Contains(app.Name))
+                    {
+                        app.SourceInfo = source;
+                        break;
+                    }
+                }
+            }
+        }
+
+        public async Task CheckAppUpdateAsync(InstalledApp app)
+        {
+            if (app.SourceInfo == null) return;
+
+            try
+            {
+                var args = $"show --id {app.SourceInfo.Id} --exact --accept-source-agreements";
+                var output = await RunWinGetAsync(args);
+                var lines = output.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var line in lines)
+                {
+                    if (line.Trim().StartsWith("Version:"))
+                    {
+                        var latestVersion = line.Trim().Replace("Version:", "").Trim();
+                        app.LatestVersion = latestVersion;
+
+                        if (Version.TryParse(app.Version, out var current) &&
+                            Version.TryParse(latestVersion, out var latest))
+                        {
+                            app.HasUpdate = latest > current;
+                        }
+                        break;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        public async Task CheckAllUpdatesAsync(List<InstalledApp> apps)
+        {
+            foreach (var app in apps)
+            {
+                if (app.IsInSource)
+                {
+                    await CheckAppUpdateAsync(app);
+                }
+            }
+        }
+
+        public async Task DownloadUpdateAsync(InstalledApp app)
+        {
+            if (app.SourceInfo == null) return;
+
+            var appInfo = new AppInfo
+            {
+                Id = app.SourceInfo.Id,
+                Name = app.Name,
+                IconUrl = app.SourceInfo.IconUrl,
+                DownloadUrl = ""
+            };
+
+            await DownloadAsync(appInfo);
+        }
+
+        public async Task<bool> UninstallAsync(InstalledApp app)
+        {
+            if (string.IsNullOrEmpty(app.UninstallString)) return false;
+
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c {app.UninstallString}",
+                    UseShellExecute = true,
+                    Verb = "runas"
+                };
+                Process.Start(psi);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
